@@ -4,7 +4,7 @@ CXX = g++-13
 #CXX = clang++-12
 
 CXXFLAGS := -Wall -Wextra -Wpedantic -g -std=c++23
-LDLIBS := -lssl -lcrypto
+LDLIBS := -lcrypto
 
 
 srcfiles := $(shell find . -maxdepth 1 -name "*.cpp")

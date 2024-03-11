@@ -1,75 +1,85 @@
 #include <iostream>
 #include <string>
+#include <map>
 #include <vector>
-#include <algorithm>
+//#include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
-#include <cassert>
 
+#include <memory>
 #include <openssl/md5.h>
 
 namespace fs = std::filesystem;
 
-
 class FilesHash {
-    public:
-    const std::filesystem::directory_entry dirEntry;
-
-    ~FilesHash()
-    {
-        //Clean up
-        delete [] InFileData;
+public:
+    
+    FilesHash() = delete;
+    explicit FilesHash(std::vector<fs::directory_entry> &_files) : files(_files){
+        this->getRepeatedFiles();
     }
-    explicit FilesHash(const std::filesystem::directory_entry _dirEntry) : dirEntry(_dirEntry)
+
+    std::vector<fs::directory_entry> getRepFiles(){
+        return this->repFiles;
+    }
+    
+    std::vector<fs::directory_entry> getZeroLenFiles(){
+        return this->zeroLenFiles;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, FilesHash& filesHash)
     {
-        std::ifstream fp(p.path(), std::ios::in | std::ios::binary);
-        if (not fp.good()) {
-            std::cout << "Failed to open path: "<< p.path() << std::endl;
+        for (const auto& p : filesHash.repFiles)
+            os << p.path() << std::endl;  
+        return os;
+    }
+    ~FilesHash() = default;
+
+private:
+    const std::vector<fs::directory_entry> &files;
+    std::vector<fs::directory_entry> repFiles;
+    std::vector<fs::directory_entry> zeroLenFiles;
+    std::map <std::string, fs::directory_entry> uniqFiles;
+    char result[MD5_DIGEST_LENGTH];
+    
+    void getRepeatedFiles() {
+        for (const auto& p : files) {
+            std::ifstream fp(p.path(), std::ios::in | std::ios::binary);
+            
+            if (not fp.good()) {
+                std::cout << "Failed to open path: "<< p.path() << std::endl;
+            }
+            
+
+            //Find length of file
+            fp.seekg (0, std::ios::end);
+            long Length = fp.tellg();
+            fp.seekg (0, std::ios::beg);    
+
+            if (0 == Length)
+            {
+                std::cout << "Lengh is 0 "<< p.path() << std::endl;
+                zeroLenFiles.push_back(p);
+                continue;
+            }
+            
+
+            std::unique_ptr<unsigned char> p1(new unsigned char [Length]);
+
+            fp.read((char*)p1.get(), Length);
+
+            MD5(p1.get(), Length, (unsigned char*)result);
+            
+            std::string resStr(result, MD5_DIGEST_LENGTH);
+
+            if (0 == uniqFiles.count(resStr)){
+                uniqFiles[resStr] = p;
+            } else {
+                repFiles.push_back(p);
+            }
+
         }
-        
-        //std::cout << p.path() << std::endl;
-
-        std::cout << "extension: " << p.path().extension() << std::endl;
-
-        //Find length of file
-        fp.seekg (0, std::ios::end);
-        long Length = fp.tellg();
-        fp.seekg (0, std::ios::beg);    
-
-        if (0 == Length)
-        continue;
-
-        //read in the data from your file
-        char * InFileData = new char[Length];
-        fp.read(InFileData, Length);
-
-
     }
-
-
-}
-
-class FilesPath {
-    public:
-        explicit FilesPath(const std::filesystem::directory_iterator it);
-        
-        
-        std::vector <std::string> getKnownProducts();
-        std::vector <OrderBookEntry> getOrders (OrderBookType type, const std::string& product, const std::string&  time);
-
-        std::vector<OrderBookEntry> matchAsksToBids(std::string product, std::string timestamp);
-
-        std::string getEarliestTime();
-        std::string getNextTime(const std::string& timestamp);
-
-        void insertOrder (OrderBookEntry& order);
-
-    private:
-        unsigned char result[MD5_DIGEST_LENGTH];
-        
-        std::vector <OrderBookEntry> orders;
-
 };
 
 
