@@ -1,3 +1,5 @@
+valgrind*
+*.png
 # Prerequisites
 *.d
 

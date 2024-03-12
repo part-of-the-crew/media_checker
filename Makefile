@@ -1,9 +1,11 @@
-appname := merch
+appname := app
 
 CXX = g++-13
 #CXX = clang++-12
 
 CXXFLAGS := -Wall -Wextra -Wpedantic -g -std=c++23
+
+LDFLAGS :=
 LDLIBS := -lcrypto
 
 

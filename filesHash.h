@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <fstream>
 
+#include <utility>
+
 #include <memory>
 #include <openssl/md5.h>
 
@@ -15,8 +17,8 @@ class FilesHash {
 public:
     
     FilesHash() = delete;
-    explicit FilesHash(std::vector<fs::directory_entry> &_files) : files(_files){
-        this->getRepeatedFiles();
+    explicit FilesHash(const std::vector <std::pair<std::streampos, fs::directory_entry>> &files){
+        this->getRepeatedFiles(files);
     }
 
     std::vector<fs::directory_entry> getRepFiles(){
@@ -27,7 +29,7 @@ public:
         return this->zeroLenFiles;
     }
 
-    friend std::ostream& operator<<(std::ostream& os, FilesHash& filesHash)
+    friend std::ostream& operator<<(std::ostream& os, const FilesHash& filesHash)
     {
         for (const auto& p : filesHash.repFiles)
             os << p.path() << std::endl;  
@@ -36,46 +38,31 @@ public:
     ~FilesHash() = default;
 
 private:
-    const std::vector<fs::directory_entry> &files;
+    //const std::vector <std::streampos, fs::directory_entry> &files;
+    //const std::vector<fs::directory_entry> &files;
     std::vector<fs::directory_entry> repFiles;
     std::vector<fs::directory_entry> zeroLenFiles;
     std::map <std::string, fs::directory_entry> uniqFiles;
     char result[MD5_DIGEST_LENGTH];
     
-    void getRepeatedFiles() {
+    void getRepeatedFiles(const std::vector <std::pair<std::streampos, fs::directory_entry>> &files) {
         for (const auto& p : files) {
-            std::ifstream fp(p.path(), std::ios::in | std::ios::binary);
+
+            std::ifstream fp(p.second.path(), std::ios::in | std::ios::binary);
             
-            if (not fp.good()) {
-                std::cout << "Failed to open path: "<< p.path() << std::endl;
-            }
-            
+            std::unique_ptr<unsigned char[]> p1 =  std::make_unique<unsigned char[]>(p.first);
 
-            //Find length of file
-            fp.seekg (0, std::ios::end);
-            long Length = fp.tellg();
-            fp.seekg (0, std::ios::beg);    
+            fp.read((char*)p1.get(), p.first);
 
-            if (0 == Length)
-            {
-                std::cout << "Lengh is 0 "<< p.path() << std::endl;
-                zeroLenFiles.push_back(p);
-                continue;
-            }
-            
-
-            std::unique_ptr<unsigned char> p1(new unsigned char [Length]);
-
-            fp.read((char*)p1.get(), Length);
-
-            MD5(p1.get(), Length, (unsigned char*)result);
+            MD5(p1.get(), p.first, (unsigned char*)result);
             
             std::string resStr(result, MD5_DIGEST_LENGTH);
 
             if (0 == uniqFiles.count(resStr)){
-                uniqFiles[resStr] = p;
+                uniqFiles[resStr] = p.second;
             } else {
-                repFiles.push_back(p);
+                repFiles.push_back(p.second);
+                repFiles.push_back(uniqFiles[resStr]);
             }
 
         }

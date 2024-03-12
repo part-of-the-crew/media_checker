@@ -19,7 +19,7 @@ public:
     FilesPath() = delete;
 
     
-    explicit FilesPath(std::vector<std::string>& exts) : exts_tolower(exts){
+    explicit FilesPath(const std::vector<std::string>& exts) : exts_tolower(exts){
 
         // write to the same location
         for (const auto& e : exts) {
@@ -40,7 +40,6 @@ public:
             for (const auto& e : exts_tolower) {
                 if (f.path().extension() == e)
                 {
-                    //std::cout << "extension: " << p.path().extension() << std::endl;
                     files.push_back(f);  
                 }
            

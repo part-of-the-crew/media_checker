@@ -7,6 +7,7 @@
 
 
 #include "filesPath.h"
+#include "filesSize.h"
 #include "filesHash.h"
 
 int main()
@@ -18,7 +19,14 @@ int main()
     //std::cout << "filesPath:\n" << filesPath << std::endl;
 
     auto p = filesPath.getFiles();
-    FilesHash filesHash(p);
+
+    FilesSize filesSize(p);
+
+    std::cout << "\nFiles with same size:\n" << filesSize << std::endl;
+
+    auto s = filesSize.getRepFiles();
+
+    FilesHash filesHash(s);
 
     std::cout << "Repetative:\n" << filesHash << std::endl;
  
