@@ -15,7 +15,7 @@ class FilesSize {
 public:
     
     FilesSize() = delete;
-    explicit FilesSize(const std::vector<fs::directory_entry> &_files) : files(_files){
+    FilesSize(const std::vector<fs::directory_entry> &_files) : files(_files){
         this->getSameSizeFiles();
     }
 

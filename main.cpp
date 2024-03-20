@@ -18,7 +18,7 @@ int main()
 
     //std::cout << "filesPath:\n" << filesPath << std::endl;
 
-    auto p = filesPath.getFiles();
+    auto p = filesPath.getSelectedFiles();
 
     FilesSize filesSize(p);
 

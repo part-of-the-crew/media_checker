@@ -2,6 +2,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <array> 
 //#include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -17,7 +18,7 @@ class FilesHash {
 public:
     
     FilesHash() = delete;
-    explicit FilesHash(const std::vector <std::pair<std::streampos, fs::directory_entry>> &files){
+    FilesHash(const std::vector <std::pair<std::streampos, fs::directory_entry>> &files){
         this->getRepeatedFiles(files);
     }
 
@@ -42,27 +43,26 @@ private:
     //const std::vector<fs::directory_entry> &files;
     std::vector<fs::directory_entry> repFiles;
     std::vector<fs::directory_entry> zeroLenFiles;
-    std::map <std::string, fs::directory_entry> uniqFiles;
-    char result[MD5_DIGEST_LENGTH];
-    
+    std::map <std::array<unsigned char, MD5_DIGEST_LENGTH>, fs::directory_entry> uniqFiles;
+    std::array<unsigned char, MD5_DIGEST_LENGTH> arr_res;
+
     void getRepeatedFiles(const std::vector <std::pair<std::streampos, fs::directory_entry>> &files) {
         for (const auto& p : files) {
 
             std::ifstream fp(p.second.path(), std::ios::in | std::ios::binary);
+
+            auto p_unique = std::make_unique<unsigned char[]>(p.first);
+
+            fp.read(reinterpret_cast<char*>(p_unique.get()), p.first);
+
+            MD5(p_unique.get(), p.first, arr_res.data());
             
-            std::unique_ptr<unsigned char[]> p1 =  std::make_unique<unsigned char[]>(p.first);
 
-            fp.read((char*)p1.get(), p.first);
-
-            MD5(p1.get(), p.first, (unsigned char*)result);
-            
-            std::string resStr(result, MD5_DIGEST_LENGTH);
-
-            if (0 == uniqFiles.count(resStr)){
-                uniqFiles[resStr] = p.second;
+            if (0 == uniqFiles.count(arr_res)){
+                uniqFiles[std::move(arr_res)] = std::move(p.second);
             } else {
-                repFiles.push_back(p.second);
-                repFiles.push_back(uniqFiles[resStr]);
+                repFiles.push_back(std::move(p.second));
+                repFiles.push_back(uniqFiles[arr_res]);
             }
 
         }
